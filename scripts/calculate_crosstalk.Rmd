@@ -1,0 +1,64 @@
+##  crosstalk report
+
+
+library
+```{r}
+
+library(dplyr)
+
+```
+
+
+## crosstalk data
+```{r}
+
+df1 = readr::read_csv("reports.csv")
+
+df1
+
+```
+
+
+## demux data
+```{r}
+
+df_2 = readxl::read_excel("20251111_NextSeq2000.xlsx", sheet =4)
+df_2
+names(df_2)
+
+df_2_s = df_2 %>% 
+  dplyr::select( Sample, `PF Clusters`) %>% 
+  dplyr::rename ( PF_Clusters = `PF Clusters` )
+
+readr::write_csv( df_2_s, "demux_counts.csv")
+
+df_2_s
+
+```
+
+
+
+## combine crosstalk data and demux data
+```{r}
+
+df_2_s$well <- substr(df_2_s$Sample, nchar(df_2_s$Sample) - 2, nchar(df_2_s$Sample))
+
+# Method 1: Using a loop with match()
+for (i in 1:nrow(df1)) {
+  well_name <- df1$well[i]
+  # Find matching well in df_2_s
+  idx <- match(well_name, df_2_s$well)
+  
+  if (!is.na(idx)) {
+    # Fill diagonal: column position is i+1 because first column is "well"
+    df1[i, i + 1] <- df_2_s$PF_Clusters[idx]
+  }
+}
+
+# View result
+head(df1)
+names(df1)[1] = "i7"
+readr::write_csv( df1, "reports/20251111_NextSeq2000_crosstalk_report.csv")
+
+```
+
